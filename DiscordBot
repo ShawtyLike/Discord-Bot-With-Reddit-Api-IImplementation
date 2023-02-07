@@ -1,0 +1,138 @@
+import discord
+from discord.ext import commands
+import os
+import asyncio
+import random
+from discord import utils
+import praw
+import time
+import aiohttp
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
+from selenium.common.exceptions import NoSuchElementException
+reddit = praw.Reddit(#SECRET KEY#)
+
+driver  = webdriver.Firefox()
+
+# comamnds key.
+script = commands.Bot(command_prefix="!")
+
+@script.event
+async def on_invite_create(invite):
+    channel = script.get_channel(278477775416066048)
+    await channel.send("@everyone "+str(invite.inviter) +"has created an invite")
+
+
+#On_ready indicator
+@script.event
+async def on_ready():
+    game = discord.Game("Trading stocks")
+    await script.change_presence(status=discord.Status.dnd, activity=game)
+    print ("Bot ready")
+
+
+
+
+
+@script.command()
+async def stock(ctx, stockname):
+
+    stockurl = "https://www.cnbc.com/quotes/"+(str(stockname)).upper()
+    print(1)
+    async with aiohttp.ClientSession() as session:
+        async with session.get(stockurl) as response:
+            text = await response.read()
+            obj = BeautifulSoup(text.decode('utf-8'), "html5lib")
+            n = 0
+            for a in obj.find_all('span', {"class": "QuoteStrip-lastPrice"}):
+                n += 1
+                if n == 1:
+                    await ctx.send("Open price: " + str(a).replace('<span class="QuoteStrip-lastPrice">', "").replace('</span>',""))
+                elif n == 2:
+                    await ctx.send("Close price: " + str(a).replace('<span class="QuoteStrip-lastPrice">', "").replace('</span>',""))
+
+
+
+@script.command()
+async def random1(ctx):
+    import random
+    value1 = random.randint (1,10)
+    await ctx.send (f"Your randomly generated number :{value1}")
+
+@script.command()
+async def random2(ctx):
+    import random
+    await ctx.channel.purge(limit=1)
+    value2 = random.randint(1,10)
+    value3 = random.randint (1,10)
+    await ctx.send(f"Num_1 = {value2}\nNum_2 = {value3}")
+
+
+
+@script.command()
+async def clear(ctx, amount=30):
+    await ctx.channel.purge(limit=amount)
+
+
+
+
+
+
+
+
+
+
+@script.command()
+async def opgg(ctx, arg1, arg2):
+    driver.get(f"https://eune.op.gg/champion/{arg1}/statistics/{arg2}/build")
+    runes = driver.find_element_by_xpath('/html/body/div[2]/div[3]/div/div[2]/div[5]/div[1]/div/div[1]/div/table/tbody[2]/tr[1]/td[1]/div')
+    driver.execute_script(f"window.scrollTo(0,700)")
+
+
+
+
+
+
+@commands.has_role("CREATOR")
+@script.command()
+async def memespam10(ctx):
+    memecount = 0
+    for submission in reddit.subreddit("Dankmemes").hot(limit=10):
+        memecount = memecount + 1
+        await ctx.send(f"{submission.url} meme№{str(memecount)}")
+
+
+
+@commands.has_role("CREATOR")
+@script.command()
+async def memespam100(ctx):
+    memecount = 0
+    for submission in reddit.subreddit("Dankmemes").hot(limit=5):
+        memecount = memecount + 1
+        await ctx.send (f"{submission.url} meme№{memecount}")
+
+
+def is_comment_made_by_bot(comment):
+    if "I am a bot" in comment:
+        return true
+    else:
+        return false
+
+
+@script.command()
+async def frontpage(ctx):
+    for submission in reddit.subreddit("all").hot(limit=10):
+        print("sent")
+        await ctx.send(f"r/{submission.subreddit} \n Post: {submission.url}\n Title:{submission.title}\n Top comment: {submission.comments[0].body}\n\n\n\n\n")
+
+
+@script.command()
+async def stocknews(ctx):
+    print("stocknews")
+    for submission in reddit.subreddit("stocks").hot(limit=10):
+        await ctx.send(f"\n\nTitle: {submission.title}\nBody: {submission.selftext}\nUrl: {submission.url}\nScore: {submission.score}")
+
+
+script.run(#SECRET KEY#)
+driver.close()
